@@ -9,6 +9,28 @@ let selectedPrice = 0;
 let orderCart = [];
 
 // ==========================
+// PHONE NUMBER VALIDATION (LOCAL + ONLINE READY)
+// ==========================
+function isValidSouthAfricanNumber(phone) {
+  const cleaned = phone.replace(/\s+/g, '');
+  const saPattern = /^(?:\+27|0)[6-8][0-9]{8}$/; // Matches 060–089 numbers
+  return saPattern.test(cleaned);
+}
+
+// Optional: Real verification (using API like Numverify or Twilio Lookup)
+async function verifyPhoneNumberExists(phone) {
+  const accessKey = "e024afb5191462ab61fe5245cd1f9be2"; 
+  try {
+    const response = await fetch(`https://apilayer.net/api/validate?access_key=${accessKey}&number=${phone}&country_code=ZA&format=1`);
+    const data = await response.json();
+    return data.valid; // true if number exists
+  } catch (error) {
+    console.error("Phone verification error:", error);
+    return false;
+  }
+}
+
+// ==========================
 // ORDER FUNCTIONS
 // ==========================
 function orderNow(product, price) {
@@ -90,14 +112,27 @@ function showBedSizeDetails() {
 // ==========================
 // SINGLE ORDER SUBMISSION
 // ==========================
-document.getElementById("orderForm").addEventListener("submit", function(e) {
+document.getElementById("orderForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
   const name = document.getElementById("name").value;
   const address = document.getElementById("address").value;
-  const phone = document.getElementById("phone").value;
+  const phone = document.getElementById("phone").value.trim();
   const bedSize = document.getElementById("bedSize").value;
   const addDrawers = document.getElementById("addDrawers").checked;
+
+  // ✅ Step 1: Validate local phone number format
+  if (!isValidSouthAfricanNumber(phone)) {
+    alert("⚠️ Please enter a valid South African phone number before proceeding.");
+    return;
+  }
+
+  // ✅ Step 2 (optional): Verify if the number really exists (enable when API key is added)
+  // const exists = await verifyPhoneNumberExists(phone);
+  // if (!exists) {
+  //   alert("❌ This phone number does not exist. Please double-check before submitting.");
+  //   return;
+  // }
 
   let sizeMessage = bedSize ? `%0A🛏️ Size: ${bedSize}` : '';
   if (addDrawers) sizeMessage += ` + Side Drawers`;
@@ -142,6 +177,11 @@ function addToCart() {
 
   if (!name || !address || !phone) {
     alert("⚠️ Please fill in your details first before adding to cart.");
+    return;
+  }
+
+  if (!isValidSouthAfricanNumber(phone)) {
+    alert("⚠️ Please enter a valid South African phone number before adding to cart.");
     return;
   }
 
@@ -209,6 +249,11 @@ function confirmCartOrder() {
     return;
   }
 
+  if (!isValidSouthAfricanNumber(phone)) {
+    alert("⚠️ Invalid South African phone number.");
+    return;
+  }
+
   let orderText = "🛒 *New Multiple Order*\n---------------------\n";
   orderCart.forEach((item, i) => {
     orderText += `${i + 1}. ${item.product} (${item.size}) - R${item.price}\nDrawers: ${item.drawers}\n\n`;
@@ -247,6 +292,3 @@ window.removeCartItem = removeCartItem;
 window.clearCart = clearCart;
 window.confirmCartOrder = confirmCartOrder;
 window.updateCartCounter = updateCartCounter;
-
-
-
